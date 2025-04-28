@@ -1,5 +1,3 @@
-// utils/response.ts
-
 export interface ApiResponse {
   statusCode: number;
   body: string;
