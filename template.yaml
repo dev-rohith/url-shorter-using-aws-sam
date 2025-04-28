@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-testing
+  Sample SAM Template for sam-testing
+  
+Resources:
+  UrlShortenerTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: "UrlShortener"
+      AttributeDefinitions:
+        - AttributeName: "shortId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "shortId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  ShortenUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: src/shortenUrl.handler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /get-url-shortner
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: UrlShortener
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UrlShortenerTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - shortenUrl.ts
+
+  RedirectUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: src/redirectUrl.handler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      Events:
+        RedirectUrlApi:
+          Type: Api
+          Properties:
+            Path: /{shortUrl}
+            Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: UrlShortener
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UrlShortenerTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - redirectUrl.ts
+
+Outputs:
+  getShortUrlApi:
+    Description: API Gateway endpoint URL for Prod stage for Shorten URL function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  ShortenUrlFunction:
+    Description: Shorten URL Lambda Function ARN
+    Value: !GetAtt ShortenUrlFunction.Arn
+
+  RedirectUrlFunction:
+    Description: Redirect URL Lambda Function ARN
+    Value: !GetAtt RedirectUrlFunction.Arn
+
+  ShortenUrlFunctionIamRole:
+    Description: Implicit IAM Role created for Shorten URL function
+    Value: !GetAtt ShortenUrlFunctionRole.Arn
+
+  RedirectUrlFunctionIamRole:
+    Description: Implicit IAM Role created for Redirect URL function
+    Value: !GetAtt RedirectUrlFunctionRole.Arn
