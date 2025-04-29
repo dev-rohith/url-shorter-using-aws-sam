@@ -9,15 +9,15 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const { shortUrl } = event.pathParameters || {};
+  const { shortCode } = event.pathParameters || {};
 
-  if (!shortUrl) return createResponse(400, "Short URL parameter is missing");
+  if (!shortCode) return createResponse(400, "Short URL parameter is missing");
 
   try {
     const params = {
       TableName: process.env.TABLE_NAME,
       Key: {
-        shortId: shortUrl,
+        shortId: shortCode,
       },
     };
 

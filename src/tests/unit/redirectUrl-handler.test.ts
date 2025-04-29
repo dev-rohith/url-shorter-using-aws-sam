@@ -6,11 +6,12 @@ import { afterAll, afterEach, expect, jest } from "@jest/globals";
 import { beforeEach, describe, it } from "node:test";
 import { baseEvent } from "./shortenUrl-handler.test";
 
-const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+const consoleErrorSpy = jest
+  .spyOn(console, "error")
+  .mockImplementation(() => {});
 const dynamoDBMock = mockClient(DynamoDBDocumentClient);
 
 process.env.TABLE_NAME = "UrlShortener";
-
 
 beforeEach(() => {
   dynamoDBMock.reset();
@@ -18,14 +19,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    consoleErrorSpy.mockClear();
-  });
-  
-  afterAll(() => {
-    consoleErrorSpy.mockRestore();
-    jest.restoreAllMocks();
-    jest.resetModules();
-  });
+  consoleErrorSpy.mockClear();
+});
+
+afterAll(() => {
+  consoleErrorSpy.mockRestore();
+  jest.restoreAllMocks();
+  jest.resetModules();
+});
 
 describe("Unit tests for getShortUrl handler", () => {
   it("returns 400 when shortUrl is missing", async () => {
@@ -37,17 +38,25 @@ describe("Unit tests for getShortUrl handler", () => {
     const result: APIGatewayProxyResult = await handler(event);
 
     expect(result.statusCode).toBe(400);
-    expect(result.body).toBe(JSON.stringify({ message: "Short URL parameter is missing" }));
+    expect(result.body).toBe(
+      JSON.stringify({ message: "Short URL parameter is missing" })
+    );
   });
 
   it("returns 404 when item is not found", async () => {
     dynamoDBMock.on(GetCommand).resolves({});
 
-    const event = baseEvent as APIGatewayProxyEvent;
+    const event: APIGatewayProxyEvent = {
+      ...(baseEvent as APIGatewayProxyEvent),
+      pathParameters: { shortCode: "6s8hj" },
+    };
+
     const result = await handler(event);
 
     expect(result.statusCode).toBe(404);
-    expect(result.body).toBe(JSON.stringify({ message: "Shortened URL not found" }));
+    expect(result.body).toBe(
+      JSON.stringify({ message: "Shortened URL not found" })
+    );
   });
 
   it("returns 301 redirect when item is found", async () => {
@@ -57,7 +66,11 @@ describe("Unit tests for getShortUrl handler", () => {
       },
     });
 
-    const event = baseEvent as APIGatewayProxyEvent;
+    const event: APIGatewayProxyEvent = {
+      ...(baseEvent as APIGatewayProxyEvent),
+      pathParameters: { shortCode: "6s8hj" },
+    };
+
     const result = await handler(event);
 
     expect(result.statusCode).toBe(301);
@@ -70,7 +83,10 @@ describe("Unit tests for getShortUrl handler", () => {
   it("returns 500 on internal error", async () => {
     dynamoDBMock.on(GetCommand).rejects(new Error("Simulated DB error"));
 
-    const event = baseEvent as APIGatewayProxyEvent;
+    const event: APIGatewayProxyEvent = {
+      ...(baseEvent as APIGatewayProxyEvent),
+      pathParameters: { shortCode: "6s8hj" },
+    };
     const result = await handler(event);
 
     expect(result.statusCode).toBe(500);

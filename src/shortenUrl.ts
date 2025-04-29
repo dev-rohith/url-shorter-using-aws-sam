@@ -21,13 +21,14 @@ export const handler = async (
     const { source_url } = JSON.parse(event.body);
     if (!source_url) return createResponse(400, "Source url is required");
 
+
     const urlValidationResult = validateUrl(source_url);
     if (!urlValidationResult.valid)
       return createResponse(400, urlValidationResult.message);
-
-    const baseUrl = event?.multiValueHeaders?.Host;
+    const stage = event.requestContext.stage
+    const baseUrl = event.multiValueHeaders.Host;
     const shortId = uid.randomUUID();
-    const shortUrl = `https://${baseUrl}/Prod/${shortId}`;
+    const shortUrl = `https://${baseUrl}/${stage}/${shortId}`;
 
     const params = {
       TableName: process.env.TABLE_NAME,
