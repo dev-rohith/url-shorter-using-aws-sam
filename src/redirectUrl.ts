@@ -33,10 +33,13 @@ export const handler = async (
       { original_url: originalUrl },
       { Location: originalUrl }
     );
+
   } catch (err) {
+
     const error = err as Error;
     return createResponse(500, "Failed to retrieve the original URL", {
       error: error.message,
     });
+    
   }
 };

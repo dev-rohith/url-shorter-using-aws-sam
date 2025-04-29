@@ -21,10 +21,9 @@ export const handler = async (
     const { source_url } = JSON.parse(event.body);
     if (!source_url) return createResponse(400, "Source url is required");
 
-
     const urlValidationResult = validateUrl(source_url);
-    if (!urlValidationResult.valid)
-      return createResponse(400, urlValidationResult.message);
+    if (!urlValidationResult.valid) return createResponse(400, urlValidationResult.message);
+
     const stage = event.requestContext.stage
     const baseUrl = event.multiValueHeaders.Host;
     const shortId = uid.randomUUID();
@@ -44,10 +43,13 @@ export const handler = async (
     return createResponse(200, "Shortened URL created successfully", {
       shortUrl,
     });
+
   } catch (err: unknown) {
+
     const error = err as Error
     return createResponse(500, "Internal server error", {
       error 
     });
+    
   }
 };
