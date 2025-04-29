@@ -30,7 +30,7 @@ export const handler = async (
     const shortUrl = `https://${baseUrl}/Prod/${shortId}`;
 
     const params = {
-      TableName: process.env.TABLE_NAME || 'UrlShortener',
+      TableName: process.env.TABLE_NAME,
       Item: {
         shortId,
         longUrl: source_url,
@@ -45,7 +45,6 @@ export const handler = async (
     });
   } catch (err: unknown) {
     const error = err as Error
-    console.error(error);
     return createResponse(500, "Internal server error", {
       error 
     });

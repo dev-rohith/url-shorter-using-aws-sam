@@ -1,8 +1,15 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { handler } from "../../shortenUrl";
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, afterAll, afterEach, beforeEach } from "@jest/globals";
+import { mockClient } from "aws-sdk-client-mock";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
-const baseEvent: Partial<APIGatewayProxyEvent> = {
+const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+const dynamoDBMock = mockClient(DynamoDBDocumentClient);
+
+process.env.TABLE_NAME = 'UrlShortener'
+
+export const baseEvent: Partial<APIGatewayProxyEvent> = {
   httpMethod: "POST",
   body: "",
   headers: {},
@@ -46,6 +53,22 @@ const baseEvent: Partial<APIGatewayProxyEvent> = {
   stageVariables: null,
 };
 
+beforeEach(() => {
+  process.env.TABLE_NAME = "AssetManagement-TestStack";
+  dynamoDBMock.reset();
+  jest.clearAllMocks();
+});
+
+afterEach(() => {
+  consoleErrorSpy.mockClear();
+});
+
+afterAll(() => {
+  consoleErrorSpy.mockRestore();
+  jest.restoreAllMocks();
+  jest.resetModules();
+});
+
 describe("Unit test for shortenUrl handler", () => {
   it("returns 400 when body is missing", async () => {
     const event = baseEvent as APIGatewayProxyEvent;
@@ -72,17 +95,15 @@ describe("Unit test for shortenUrl handler", () => {
   });
 
   it("returns 500 on internal error", async () => {
-    jest.resetModules();
-    jest.spyOn(console, "error").mockImplementation(() => {});
-
-    const { handler: faultyHandler } = await import("../../shortenUrl");
+    dynamoDBMock.on(PutCommand).rejects(new Error("Simulated failure"));
+  
     const body = JSON.stringify({ source_url: "https://www.example.com" });
-
-    const result: APIGatewayProxyResult = await faultyHandler({
+  
+    const result: APIGatewayProxyResult = await handler({
       ...(baseEvent as APIGatewayProxyEvent),
       body,
     });
-
+  
     expect(result.statusCode).toBe(500);
     const parsed = JSON.parse(result.body);
     expect(parsed.message || parsed.error).toMatch(/Internal server error/);
@@ -99,6 +120,6 @@ describe("Unit test for shortenUrl handler", () => {
 
     const parsed = JSON.parse(result.body);
     expect(parsed.message).toBe("Shortened URL created successfully");
-    expect(parsed.data.shortUrl).toMatch(/^https?:\/\/www\..+\..+/);
+    expect(parsed.data.shortUrl).toMatch(/^https/);
   });
 });

@@ -24,14 +24,17 @@ export const handler = async (
     const result = await ddbDocClient.send(new GetCommand(params));
 
     if (!result.Item) return createResponse(404, "Shortened URL not found");
-    
 
     const originalUrl = result.Item.longUrl;
 
-    return createResponse(301,"success", { original_url: originalUrl }, { Location: originalUrl });
-    
-  } catch (error) {
-    console.error(error);
+    return createResponse(
+      301,
+      "success",
+      { original_url: originalUrl },
+      { Location: originalUrl }
+    );
+  } catch (err) {
+    const error = err as Error;
     return createResponse(500, "Failed to retrieve the original URL", {
       error: error.message,
     });
